@@ -1,0 +1,77 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Resources": {
+        "SDTrainBatchJobDefinition": {
+            "Type": "AWS::Batch::JobDefinition",
+            "Properties": {
+                "JobDefinitionName": "SDTrain",
+                "Type": "container",
+                "ContainerProperties": {
+                    "Image": "953370256968.dkr.ecr.us-east-1.amazonaws.com/pytorchsandbox",
+                    "ResourceRequirements": [
+                        {
+                            "Type": "GPU",
+                            "Value": "1"
+                        },
+                        {
+                            "Type": "VCPU",
+                            "Value": "4"
+                        },
+                        {
+                            "Type": "MEMORY",
+                            "Value": "16"
+                        }
+                        
+                    ]
+                }
+            }
+        },
+        "SDTrainBatchOnDemandComputeEnvironment": {
+            "Type": "AWS::Batch::ComputeEnvironment",
+            "Properties": {
+                "ComputeEnvironmentName": "SDTrainOnDemand",
+                "Type": "MANAGED",
+                "ServiceRole": "arn:aws:iam::953370256968:role/aws-service-role/batch.amazonaws.com/AWSServiceRoleForBatch",
+                "ComputeResources": {
+                    "InstanceRole": "ecsInstanceRole",
+                    "ImageId": "ami-0b3365709b457b41c",
+                    "Type": "EC2",
+                    "MinvCpus": 0,
+                    "DesiredvCpus": 4,
+                    "MaxvCpus": 4,
+                    "InstanceTypes": [
+                        "g4dn.xlarge"
+                    ],
+                    "Ec2KeyPair": "macbook_ssh_key",
+                    "Subnets": [
+                        "subnet-6c3b8d4d",
+                        "subnet-9373c7cc",
+                        "subnet-9dbc42ac",
+                        "subnet-bd4528b3",
+                        "subnet-c89ae185",
+                        "subnet-e0842f86"
+                    ],
+                    "SecurityGroupIds": [
+                        "sg-04c8adfd63b09b732"
+                    ]
+                },
+                "State": "ENABLED"
+            }
+        },
+        "SDTrainBatchJobQueue": {
+            "Type": "AWS::Batch::JobQueue",
+            "Properties": {
+                "JobQueueName": "SDTrainJobQueue",
+                "Priority": 1,
+                "ComputeEnvironmentOrder": [
+                    {
+                        "Order": 1,
+                        "ComputeEnvironment": {
+                            "Ref": "SDTrainBatchOnDemandComputeEnvironment"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

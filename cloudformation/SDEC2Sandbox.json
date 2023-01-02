@@ -1,0 +1,94 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Resources": {
+        "stablediffusionec2sandbox": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId": "ami-0b3365709b457b41c",
+                "KeyName": "macbook_ssh_key",
+                "Monitoring": true,
+                "SecurityGroupIds": [
+                    "sg-04c8adfd63b09b732"
+                ],
+                "IamInstanceProfile": {
+                    "Ref": "stablediffusioninstanceprofile"
+                },
+                "InstanceType": "g4dn.xlarge",
+                "BlockDeviceMappings": [
+                    {
+                      "DeviceName": "/dev/sda1",
+                      "Ebs": {
+                        "VolumeType": "gp3",
+                        "VolumeSize": "200",
+                        "DeleteOnTermination":"true",
+                        "Encrypted": "false"
+                      }
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "sudo apt-get upgrade",
+                                "sudo apt-get update",
+                                "sudo apt-get install awscli"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "stablediffusioninstanceprofile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "stablediffusionsandboxrole"
+                    }
+                ]
+            }
+        },
+        "stablediffusionsandboxrole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "StableDiffusionSandboxRole",
+                "Path": "/service-role/",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "ec2.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Policies": [
+                    {
+                        "PolicyName": "BucketWritePolicies",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:GetObject"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
+                    "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
+                ]
+            }
+        }
+    }
+}
